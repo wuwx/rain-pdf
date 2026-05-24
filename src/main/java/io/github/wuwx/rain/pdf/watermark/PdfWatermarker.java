@@ -1,6 +1,7 @@
 package io.github.wuwx.rain.pdf.watermark;
 
 import io.github.wuwx.rain.pdf.exception.PdfWatermarkException;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -8,6 +9,7 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType0Font;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.apache.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState;
 import org.apache.pdfbox.util.Matrix;
 
@@ -30,7 +32,7 @@ public final class PdfWatermarker {
             throw new PdfWatermarkException("Output path must be a file, but got directory: " + outputPath);
         }
 
-        try (PDDocument document = PDDocument.load(inputPath.toFile())) {
+        try (PDDocument document = Loader.loadPDF(inputPath.toFile())) {
             PDFont font = resolveFont(document, options);
             for (PDPage page : document.getPages()) {
                 addWatermarkToPage(document, page, font, options);
@@ -81,7 +83,7 @@ public final class PdfWatermarker {
     private PDFont resolveFont(PDDocument document, WatermarkOptions options) throws IOException {
         String text = options.getText();
         if (!containsChinese(text)) {
-            return PDType1Font.HELVETICA;
+            return new PDType1Font(Standard14Fonts.FontName.HELVETICA);
         }
 
         String fontPath = options.getFontResourcePath();

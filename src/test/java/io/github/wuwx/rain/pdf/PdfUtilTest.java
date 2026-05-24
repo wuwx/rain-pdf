@@ -1,6 +1,7 @@
 package io.github.wuwx.rain.pdf;
 
 import io.github.wuwx.rain.pdf.watermark.WatermarkOptions;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.junit.Test;
@@ -28,8 +29,8 @@ public class PdfUtilTest {
         assertTrue(Files.exists(output));
         assertTrue(Files.size(output) > 0);
 
-        try (PDDocument inDoc = PDDocument.load(input.toFile());
-             PDDocument outDoc = PDDocument.load(output.toFile())) {
+        try (PDDocument inDoc = Loader.loadPDF(input.toFile());
+             PDDocument outDoc = Loader.loadPDF(output.toFile())) {
             assertEquals(inDoc.getNumberOfPages(), outDoc.getNumberOfPages());
         }
     }
@@ -131,8 +132,8 @@ public class PdfUtilTest {
         assertTrue(Files.exists(output));
         assertTrue(Files.size(output) > 0);
 
-        try (PDDocument inDoc = PDDocument.load(input.toFile());
-             PDDocument outDoc = PDDocument.load(output.toFile())) {
+        try (PDDocument inDoc = Loader.loadPDF(input.toFile());
+             PDDocument outDoc = Loader.loadPDF(output.toFile())) {
             assertEquals(inDoc.getNumberOfPages(), outDoc.getNumberOfPages());
         }
     }
