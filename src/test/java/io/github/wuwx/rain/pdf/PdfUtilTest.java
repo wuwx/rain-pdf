@@ -138,6 +138,31 @@ public class PdfUtilTest {
         }
     }
 
+    @Test
+    public void shouldAddWatermarkWithCustomSpacing() throws IOException {
+        Path tempDir = Files.createTempDirectory("rain-pdf-test-spacing");
+        Path input = tempDir.resolve("input.pdf");
+        Path output = tempDir.resolve("output.pdf");
+
+        createSimplePdf(input, 1);
+        WatermarkOptions options = WatermarkOptions.builder()
+                .text("DRAFT")
+                .fontSize(24)
+                .horizontalSpacing(200.0f)
+                .verticalSpacing(200.0f)
+                .build();
+
+        PdfUtil.addWatermark(input, output, options);
+
+        assertTrue(Files.exists(output));
+        assertTrue(Files.size(output) > 0);
+
+        try (PDDocument inDoc = Loader.loadPDF(input.toFile());
+             PDDocument outDoc = Loader.loadPDF(output.toFile())) {
+            assertEquals(inDoc.getNumberOfPages(), outDoc.getNumberOfPages());
+        }
+    }
+
     private void createSimplePdf(Path output, int pages) throws IOException {
         try (PDDocument document = new PDDocument()) {
             for (int i = 0; i < pages; i++) {

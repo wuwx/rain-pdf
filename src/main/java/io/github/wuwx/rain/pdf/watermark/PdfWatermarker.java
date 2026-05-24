@@ -49,11 +49,20 @@ public final class PdfWatermarker {
 
     private void addWatermarkToPage(PDDocument document, PDPage page, PDFont font, WatermarkOptions options) throws IOException {
         PDRectangle mediaBox = page.getMediaBox();
-        float centerX = mediaBox.getLowerLeftX() + mediaBox.getWidth() / 2.0f;
-        float centerY = mediaBox.getLowerLeftY() + mediaBox.getHeight() / 2.0f;
+        float pageWidth = mediaBox.getWidth();
+        float pageHeight = mediaBox.getHeight();
 
         float textWidth = font.getStringWidth(options.getText()) / 1000.0f * options.getFontSize();
         float textHeight = options.getFontSize();
+
+        float horizontalSpacing = options.getHorizontalSpacing();
+        float verticalSpacing = options.getVerticalSpacing();
+
+        int columns = Math.max(1, (int) Math.ceil(pageWidth / horizontalSpacing));
+        int rows = Math.max(1, (int) Math.ceil(pageHeight / verticalSpacing));
+
+        float startX = (pageWidth - (columns - 1) * horizontalSpacing) / 2.0f;
+        float startY = (pageHeight - (rows - 1) * verticalSpacing) / 2.0f;
 
         try (PDPageContentStream contentStream = new PDPageContentStream(
                 document,
@@ -72,10 +81,16 @@ public final class PdfWatermarker {
             contentStream.setNonStrokingColor(options.getColor());
 
             float radians = (float) Math.toRadians(options.getRotation());
-            float textX = centerX - textWidth / 2.0f;
-            float textY = centerY - textHeight / 4.0f;
-            contentStream.setTextMatrix(Matrix.getRotateInstance(radians, textX, textY));
-            contentStream.showText(options.getText());
+
+            for (int row = 0; row < rows; row++) {
+                for (int col = 0; col < columns; col++) {
+                    float x = startX + col * horizontalSpacing - textWidth / 2.0f;
+                    float y = startY + row * verticalSpacing - textHeight / 4.0f;
+                    contentStream.setTextMatrix(Matrix.getRotateInstance(radians, x, y));
+                    contentStream.showText(options.getText());
+                }
+            }
+
             contentStream.endText();
         }
     }

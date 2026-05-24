@@ -11,6 +11,8 @@ public final class WatermarkOptions {
     public static final float DEFAULT_ROTATION = -30.0f;
     public static final Color DEFAULT_COLOR = new Color(160, 160, 160);
     public static final String DEFAULT_FONT_RESOURCE_PATH = "/fonts/LXGWWenKai-Regular.ttf";
+    public static final float DEFAULT_HORIZONTAL_SPACING = 150.0f;
+    public static final float DEFAULT_VERTICAL_SPACING = 150.0f;
 
     private final String text;
     private final int fontSize;
@@ -18,6 +20,8 @@ public final class WatermarkOptions {
     private final float rotation;
     private final Color color;
     private final String fontResourcePath;
+    private final float horizontalSpacing;
+    private final float verticalSpacing;
 
     private WatermarkOptions(Builder builder) {
         this.text = builder.text;
@@ -26,6 +30,8 @@ public final class WatermarkOptions {
         this.rotation = builder.rotation;
         this.color = builder.color;
         this.fontResourcePath = builder.fontResourcePath;
+        this.horizontalSpacing = builder.horizontalSpacing;
+        this.verticalSpacing = builder.verticalSpacing;
     }
 
     public static Builder builder() {
@@ -60,6 +66,14 @@ public final class WatermarkOptions {
         return fontResourcePath;
     }
 
+    public float getHorizontalSpacing() {
+        return horizontalSpacing;
+    }
+
+    public float getVerticalSpacing() {
+        return verticalSpacing;
+    }
+
     public static final class Builder {
         private String text;
         private int fontSize = DEFAULT_FONT_SIZE;
@@ -67,6 +81,8 @@ public final class WatermarkOptions {
         private float rotation = DEFAULT_ROTATION;
         private Color color = DEFAULT_COLOR;
         private String fontResourcePath = DEFAULT_FONT_RESOURCE_PATH;
+        private float horizontalSpacing = DEFAULT_HORIZONTAL_SPACING;
+        private float verticalSpacing = DEFAULT_VERTICAL_SPACING;
 
         private Builder() {
         }
@@ -101,6 +117,16 @@ public final class WatermarkOptions {
             return this;
         }
 
+        public Builder horizontalSpacing(float horizontalSpacing) {
+            this.horizontalSpacing = horizontalSpacing;
+            return this;
+        }
+
+        public Builder verticalSpacing(float verticalSpacing) {
+            this.verticalSpacing = verticalSpacing;
+            return this;
+        }
+
         public WatermarkOptions build() {
             if (text == null || text.trim().isEmpty()) {
                 throw new IllegalArgumentException("Watermark text must not be blank.");
@@ -116,6 +142,12 @@ public final class WatermarkOptions {
             }
             if (fontResourcePath != null && fontResourcePath.trim().isEmpty()) {
                 throw new IllegalArgumentException("fontResourcePath must not be blank.");
+            }
+            if (horizontalSpacing <= 0) {
+                throw new IllegalArgumentException("horizontalSpacing must be greater than 0.");
+            }
+            if (verticalSpacing <= 0) {
+                throw new IllegalArgumentException("verticalSpacing must be greater than 0.");
             }
             return new WatermarkOptions(this);
         }

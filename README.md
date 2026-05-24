@@ -5,12 +5,15 @@ A lightweight Java 8 PDF watermark utility with a Hutool-style static API.
 ## Features
 
 - Add text watermark to each page in an existing PDF
+- Support multiple watermarks per page with configurable horizontal and vertical spacing
 - Stable defaults for quick usage:
   - font size: 48
   - opacity: 0.2
   - rotation: -30
   - color: light gray
   - position: center
+  - horizontal spacing: 150
+  - vertical spacing: 150
 - Supports custom style through WatermarkOptions
 - Runtime exception style for simple integration
 - Built-in CJK font support for Chinese/Japanese/Korean text
@@ -19,7 +22,7 @@ A lightweight Java 8 PDF watermark utility with a Hutool-style static API.
 ## Dependencies
 
 - Java 8+
-- Apache PDFBox 3.0.0
+- Apache PDFBox 3.0.5
 - JUnit 4.13.2 (for testing)
 
 ## Installation
@@ -70,6 +73,28 @@ PdfUtil.addWatermark(
 );
 ```
 
+## Multiple Watermarks
+
+```java
+import io.github.wuwx.rain.pdf.PdfUtil;
+import io.github.wuwx.rain.pdf.watermark.WatermarkOptions;
+
+import java.nio.file.Paths;
+
+WatermarkOptions options = WatermarkOptions.builder()
+    .text("DRAFT")
+    .fontSize(24)
+    .horizontalSpacing(200.0f)
+    .verticalSpacing(200.0f)
+    .build();
+
+PdfUtil.addWatermark(
+    Paths.get("input.pdf"),
+    Paths.get("output.pdf"),
+    options
+);
+```
+
 ## WatermarkOptions Parameters
 
 | Parameter | Type | Default | Description |
@@ -80,6 +105,8 @@ PdfUtil.addWatermark(
 | rotation | float | -30.0 | Rotation angle in degrees |
 | color | Color | RGB(160,160,160) | Text color |
 | fontResourcePath | String | /fonts/LXGWWenKai-Regular.ttf | Font resource path |
+| horizontalSpacing | float | 150.0 | Horizontal spacing between watermarks in points |
+| verticalSpacing | float | 150.0 | Vertical spacing between watermarks in points |
 
 ## Chinese Text Support
 
