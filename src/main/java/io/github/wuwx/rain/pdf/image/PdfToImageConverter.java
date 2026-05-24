@@ -11,9 +11,10 @@ import org.apache.pdfbox.rendering.PDFRenderer;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -31,7 +32,26 @@ public final class PdfToImageConverter {
             throw new PdfWatermarkException("Output path must be a file, but got directory: " + outputPath);
         }
 
-        try (PDDocument sourceDoc = Loader.loadPDF(inputPath.toFile());
+        Path parent = outputPath.getParent();
+        try {
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+            try (InputStream inputStream = Files.newInputStream(inputPath);
+                 OutputStream outputStream = Files.newOutputStream(outputPath)) {
+                convertToImagePdf(inputStream, outputStream, options);
+            }
+        } catch (IOException e) {
+            throw new PdfWatermarkException("Failed to convert PDF to image PDF.", e);
+        }
+    }
+
+    public void convertToImagePdf(InputStream inputStream, OutputStream outputStream, ImageOptions options) {
+        Objects.requireNonNull(inputStream, "inputStream must not be null");
+        Objects.requireNonNull(outputStream, "outputStream must not be null");
+        Objects.requireNonNull(options, "options must not be null");
+
+        try (PDDocument sourceDoc = Loader.loadPDF(toByteArray(inputStream));
              PDDocument targetDoc = new PDDocument()) {
             PDFRenderer renderer = new PDFRenderer(sourceDoc);
             String format = options.getImageFormat();
@@ -50,11 +70,8 @@ public final class PdfToImageConverter {
                 }
             }
 
-            Path parent = outputPath.getParent();
-            if (parent != null) {
-                Files.createDirectories(parent);
-            }
-            targetDoc.save(outputPath.toFile());
+            targetDoc.save(outputStream);
+            outputStream.flush();
         } catch (IOException e) {
             throw new PdfWatermarkException("Failed to convert PDF to image PDF.", e);
         }
@@ -65,5 +82,15 @@ public final class PdfToImageConverter {
         ImageIO.write(image, format, baos);
         byte[] imageBytes = baos.toByteArray();
         return PDImageXObject.createFromByteArray(document, imageBytes, "image." + format);
+    }
+
+    private byte[] toByteArray(InputStream inputStream) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        byte[] chunk = new byte[8192];
+        int read;
+        while ((read = inputStream.read(chunk)) != -1) {
+            buffer.write(chunk, 0, read);
+        }
+        return buffer.toByteArray();
     }
 }

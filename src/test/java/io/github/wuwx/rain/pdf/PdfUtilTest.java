@@ -8,6 +8,8 @@ import org.apache.pdfbox.pdmodel.PDPage;
 import org.junit.Test;
 
 import java.awt.Color;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -140,6 +142,22 @@ public class PdfUtilTest {
     }
 
     @Test
+    public void shouldAddWatermarkUsingStreams() throws IOException {
+        byte[] inputBytes = createSimplePdfBytes(2);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        PdfUtil.addWatermark(new ByteArrayInputStream(inputBytes), outputStream, "STREAM");
+
+        byte[] outputBytes = outputStream.toByteArray();
+        assertTrue(outputBytes.length > 0);
+
+        try (PDDocument inDoc = Loader.loadPDF(inputBytes);
+             PDDocument outDoc = Loader.loadPDF(outputBytes)) {
+            assertEquals(inDoc.getNumberOfPages(), outDoc.getNumberOfPages());
+        }
+    }
+
+    @Test
     public void shouldAddWatermarkWithCustomSpacing() throws IOException {
         Path tempDir = Files.createTempDirectory("rain-pdf-test-spacing");
         Path input = tempDir.resolve("input.pdf");
@@ -206,6 +224,22 @@ public class PdfUtilTest {
     }
 
     @Test
+    public void shouldConvertToImagePdfUsingStreams() throws IOException {
+        byte[] inputBytes = createSimplePdfBytes(1);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        PdfUtil.convertToImagePdf(new ByteArrayInputStream(inputBytes), outputStream);
+
+        byte[] outputBytes = outputStream.toByteArray();
+        assertTrue(outputBytes.length > 0);
+
+        try (PDDocument inDoc = Loader.loadPDF(inputBytes);
+             PDDocument outDoc = Loader.loadPDF(outputBytes)) {
+            assertEquals(inDoc.getNumberOfPages(), outDoc.getNumberOfPages());
+        }
+    }
+
+    @Test
     public void shouldFailWhenConvertToImagePdfAndInputDoesNotExist() throws IOException {
         Path tempDir = Files.createTempDirectory("rain-pdf-test-image-missing");
         Path input = tempDir.resolve("missing.pdf");
@@ -240,6 +274,17 @@ public class PdfUtilTest {
                 document.addPage(new PDPage());
             }
             document.save(output.toFile());
+        }
+    }
+
+    private byte[] createSimplePdfBytes(int pages) throws IOException {
+        try (PDDocument document = new PDDocument();
+             ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            for (int i = 0; i < pages; i++) {
+                document.addPage(new PDPage());
+            }
+            document.save(outputStream);
+            return outputStream.toByteArray();
         }
     }
 }

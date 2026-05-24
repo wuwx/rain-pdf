@@ -13,8 +13,10 @@ import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.apache.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState;
 import org.apache.pdfbox.util.Matrix;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -32,16 +34,32 @@ public final class PdfWatermarker {
             throw new PdfWatermarkException("Output path must be a file, but got directory: " + outputPath);
         }
 
-        try (PDDocument document = Loader.loadPDF(inputPath.toFile())) {
+        Path parent = outputPath.getParent();
+        try {
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+            try (InputStream inputStream = Files.newInputStream(inputPath);
+                 OutputStream outputStream = Files.newOutputStream(outputPath)) {
+                addTextWatermark(inputStream, outputStream, options);
+            }
+        } catch (IOException e) {
+            throw new PdfWatermarkException("Failed to add watermark.", e);
+        }
+    }
+
+    public void addTextWatermark(InputStream inputStream, OutputStream outputStream, WatermarkOptions options) {
+        Objects.requireNonNull(inputStream, "inputStream must not be null");
+        Objects.requireNonNull(outputStream, "outputStream must not be null");
+        Objects.requireNonNull(options, "options must not be null");
+
+        try (PDDocument document = Loader.loadPDF(toByteArray(inputStream))) {
             PDFont font = resolveFont(document, options);
             for (PDPage page : document.getPages()) {
                 addWatermarkToPage(document, page, font, options);
             }
-            Path parent = outputPath.getParent();
-            if (parent != null) {
-                Files.createDirectories(parent);
-            }
-            document.save(outputPath.toFile());
+            document.save(outputStream);
+            outputStream.flush();
         } catch (IOException e) {
             throw new PdfWatermarkException("Failed to add watermark.", e);
         }
@@ -127,5 +145,15 @@ public final class PdfWatermarker {
             }
         }
         return false;
+    }
+
+    private byte[] toByteArray(InputStream inputStream) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        byte[] chunk = new byte[8192];
+        int read;
+        while ((read = inputStream.read(chunk)) != -1) {
+            buffer.write(chunk, 0, read);
+        }
+        return buffer.toByteArray();
     }
 }

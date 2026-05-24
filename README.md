@@ -51,6 +51,34 @@ PdfUtil.addWatermark(
 );
 ```
 
+## Stream Input and Output
+
+Use stream overloads when PDFs come from object storage or need to be written directly to an HTTP response.
+
+```java
+import io.github.wuwx.rain.pdf.PdfUtil;
+import io.github.wuwx.rain.pdf.image.ImageOptions;
+import io.github.wuwx.rain.pdf.watermark.WatermarkOptions;
+
+try (InputStream inputStream = s3Object.getObjectContent();
+     OutputStream outputStream = response.getOutputStream()) {
+    PdfUtil.addWatermark(
+        inputStream,
+        outputStream,
+        WatermarkOptions.ofText("CONFIDENTIAL")
+    );
+}
+
+try (InputStream inputStream = s3Object.getObjectContent();
+     OutputStream outputStream = response.getOutputStream()) {
+    PdfUtil.convertToImagePdf(
+        inputStream,
+        outputStream,
+        ImageOptions.ofDpi(150.0f)
+    );
+}
+```
+
 ## Advanced Usage
 
 ```java
