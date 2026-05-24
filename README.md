@@ -6,6 +6,7 @@ A lightweight Java 8 PDF watermark utility with a Hutool-style static API.
 
 - Add text watermark to each page in an existing PDF
 - Support multiple watermarks per page with configurable horizontal and vertical spacing
+- Convert PDF to image-based PDF to prevent text copying
 - Stable defaults for quick usage:
   - font size: 48
   - opacity: 0.2
@@ -14,7 +15,8 @@ A lightweight Java 8 PDF watermark utility with a Hutool-style static API.
   - position: center
   - horizontal spacing: 150
   - vertical spacing: 150
-- Supports custom style through WatermarkOptions
+  - DPI: 150
+- Supports custom style through WatermarkOptions and ImageOptions
 - Runtime exception style for simple integration
 - Built-in CJK font support for Chinese/Japanese/Korean text
 - Automatic output directory creation
@@ -108,6 +110,49 @@ PdfUtil.addWatermark(
 | horizontalSpacing | float | 150.0 | Horizontal spacing between watermarks in points |
 | verticalSpacing | float | 150.0 | Vertical spacing between watermarks in points |
 
+## PDF to Image Conversion
+
+Convert a PDF to an image-based PDF to prevent text copying. Each page is rendered as an image and combined into a new PDF.
+
+```java
+import io.github.wuwx.rain.pdf.PdfUtil;
+
+import java.nio.file.Paths;
+
+// Using default DPI (150)
+PdfUtil.convertToImagePdf(
+    Paths.get("input.pdf"),
+    Paths.get("output.pdf")
+);
+```
+
+### Custom Image Options
+
+```java
+import io.github.wuwx.rain.pdf.PdfUtil;
+import io.github.wuwx.rain.pdf.image.ImageOptions;
+
+import java.nio.file.Paths;
+
+ImageOptions options = ImageOptions.builder()
+    .dpi(72.0f)
+    .imageFormat("png")
+    .build();
+
+PdfUtil.convertToImagePdf(
+    Paths.get("input.pdf"),
+    Paths.get("output.pdf"),
+    options
+);
+```
+
+### ImageOptions Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| dpi | float | 150.0 | Resolution in dots per inch |
+| imageFormat | String | png | Image format (png, jpg, etc.) |
+
 ## Chinese Text Support
 
 The library is designed to load a bundled font from:
@@ -173,6 +218,9 @@ rain-pdf/
 │   ├── exception/
 │   │   ├── PdfException.java     # Base exception
 │   │   └── PdfWatermarkException.java # Watermark exception
+│   ├── image/
+│   │   ├── ImageOptions.java     # Image conversion options
+│   │   └── PdfToImageConverter.java # PDF to image converter
 │   └── watermark/
 │       ├── PdfWatermarker.java   # Core watermark logic
 │       └── WatermarkOptions.java # Configuration builder

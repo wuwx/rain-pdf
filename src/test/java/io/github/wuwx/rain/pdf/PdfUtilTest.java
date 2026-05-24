@@ -1,5 +1,6 @@
 package io.github.wuwx.rain.pdf;
 
+import io.github.wuwx.rain.pdf.image.ImageOptions;
 import io.github.wuwx.rain.pdf.watermark.WatermarkOptions;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -160,6 +161,76 @@ public class PdfUtilTest {
         try (PDDocument inDoc = Loader.loadPDF(input.toFile());
              PDDocument outDoc = Loader.loadPDF(output.toFile())) {
             assertEquals(inDoc.getNumberOfPages(), outDoc.getNumberOfPages());
+        }
+    }
+
+    @Test
+    public void shouldConvertToImagePdfUsingDefaultDpi() throws IOException {
+        Path tempDir = Files.createTempDirectory("rain-pdf-test-image-default");
+        Path input = tempDir.resolve("input.pdf");
+        Path output = tempDir.resolve("output.pdf");
+
+        createSimplePdf(input, 2);
+        PdfUtil.convertToImagePdf(input, output);
+
+        assertTrue(Files.exists(output));
+        assertTrue(Files.size(output) > 0);
+
+        try (PDDocument inDoc = Loader.loadPDF(input.toFile());
+             PDDocument outDoc = Loader.loadPDF(output.toFile())) {
+            assertEquals(inDoc.getNumberOfPages(), outDoc.getNumberOfPages());
+        }
+    }
+
+    @Test
+    public void shouldConvertToImagePdfUsingCustomOptions() throws IOException {
+        Path tempDir = Files.createTempDirectory("rain-pdf-test-image-custom");
+        Path input = tempDir.resolve("input.pdf");
+        Path output = tempDir.resolve("output.pdf");
+
+        createSimplePdf(input, 1);
+        ImageOptions options = ImageOptions.builder()
+                .dpi(72.0f)
+                .imageFormat("png")
+                .build();
+
+        PdfUtil.convertToImagePdf(input, output, options);
+
+        assertTrue(Files.exists(output));
+        assertTrue(Files.size(output) > 0);
+
+        try (PDDocument inDoc = Loader.loadPDF(input.toFile());
+             PDDocument outDoc = Loader.loadPDF(output.toFile())) {
+            assertEquals(inDoc.getNumberOfPages(), outDoc.getNumberOfPages());
+        }
+    }
+
+    @Test
+    public void shouldFailWhenConvertToImagePdfAndInputDoesNotExist() throws IOException {
+        Path tempDir = Files.createTempDirectory("rain-pdf-test-image-missing");
+        Path input = tempDir.resolve("missing.pdf");
+        Path output = tempDir.resolve("output.pdf");
+
+        try {
+            PdfUtil.convertToImagePdf(input, output);
+            fail("Expected runtime exception for missing input");
+        } catch (RuntimeException expected) {
+            assertTrue(expected.getMessage().contains("Input PDF does not exist"));
+        }
+    }
+
+    @Test
+    public void shouldFailWhenConvertToImagePdfAndOptionsIsNull() throws IOException {
+        Path tempDir = Files.createTempDirectory("rain-pdf-test-image-null-options");
+        Path input = tempDir.resolve("input.pdf");
+        Path output = tempDir.resolve("output.pdf");
+        createSimplePdf(input, 1);
+
+        try {
+            PdfUtil.convertToImagePdf(input, output, (ImageOptions) null);
+            fail("Expected NullPointerException for null options");
+        } catch (NullPointerException expected) {
+            assertEquals("options must not be null", expected.getMessage());
         }
     }
 
