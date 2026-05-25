@@ -1,6 +1,6 @@
 package io.github.wuwx.rain.pdf.image;
 
-import io.github.wuwx.rain.pdf.exception.PdfWatermarkException;
+import io.github.wuwx.rain.pdf.exception.PdfImageException;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -23,13 +23,13 @@ public final class PdfToImageConverter {
     public void convertToImagePdf(Path inputPath, Path outputPath, ImageOptions options) {
         Objects.requireNonNull(options, "options must not be null");
         if (inputPath == null || outputPath == null) {
-            throw new PdfWatermarkException("inputPath and outputPath must not be null.");
+            throw new PdfImageException("inputPath and outputPath must not be null.");
         }
         if (!Files.exists(inputPath) || !Files.isRegularFile(inputPath)) {
-            throw new PdfWatermarkException("Input PDF does not exist: " + inputPath);
+            throw new PdfImageException("Input PDF does not exist: " + inputPath);
         }
         if (Files.isDirectory(outputPath)) {
-            throw new PdfWatermarkException("Output path must be a file, but got directory: " + outputPath);
+            throw new PdfImageException("Output path must be a file, but got directory: " + outputPath);
         }
 
         Path parent = outputPath.getParent();
@@ -42,7 +42,7 @@ public final class PdfToImageConverter {
                 convertToImagePdf(inputStream, outputStream, options);
             }
         } catch (IOException e) {
-            throw new PdfWatermarkException("Failed to convert PDF to image PDF.", e);
+            throw new PdfImageException("Failed to convert PDF to image PDF.", e);
         }
     }
 
@@ -73,7 +73,7 @@ public final class PdfToImageConverter {
             targetDoc.save(outputStream);
             outputStream.flush();
         } catch (IOException e) {
-            throw new PdfWatermarkException("Failed to convert PDF to image PDF.", e);
+            throw new PdfImageException("Failed to convert PDF to image PDF.", e);
         }
     }
 

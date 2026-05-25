@@ -204,6 +204,7 @@ The library throws runtime exceptions for error conditions:
 
 - `PdfException`: General PDF processing errors
 - `PdfWatermarkException`: Watermark-specific errors (missing input, invalid paths, font issues)
+- `PdfImageException`: Image conversion-specific errors (missing input, invalid paths, conversion failures)
 
 ```java
 try {
@@ -211,6 +212,9 @@ try {
 } catch (PdfWatermarkException e) {
     // Handle watermark-specific errors
     System.err.println("Watermark error: " + e.getMessage());
+} catch (PdfImageException e) {
+    // Handle image conversion errors
+    System.err.println("Image conversion error: " + e.getMessage());
 } catch (PdfException e) {
     // Handle general PDF errors
     System.err.println("PDF error: " + e.getMessage());
@@ -245,6 +249,7 @@ rain-pdf/
 │   ├── PdfUtil.java              # Main API class
 │   ├── exception/
 │   │   ├── PdfException.java     # Base exception
+│   │   ├── PdfImageException.java # Image conversion exception
 │   │   └── PdfWatermarkException.java # Watermark exception
 │   ├── image/
 │   │   ├── ImageOptions.java     # Image conversion options
