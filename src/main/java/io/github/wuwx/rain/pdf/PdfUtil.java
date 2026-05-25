@@ -5,8 +5,11 @@ import io.github.wuwx.rain.pdf.rasterize.RasterizeProcessor;
 import io.github.wuwx.rain.pdf.watermark.WatermarkProcessor;
 import io.github.wuwx.rain.pdf.watermark.WatermarkOptions;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.util.Objects;
 import java.nio.file.Path;
 
@@ -15,6 +18,33 @@ public final class PdfUtil {
     private static final RasterizeProcessor RASTERIZER = new RasterizeProcessor();
 
     private PdfUtil() {
+    }
+
+    public static PdfProcess process(Path source) {
+        try (InputStream in = Files.newInputStream(source);
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = in.read(buf)) != -1) {
+                out.write(buf, 0, n);
+            }
+            return new PdfProcess(out.toByteArray());
+        } catch (IOException e) {
+            throw new PdfException("Failed to read PDF.", e);
+        }
+    }
+
+    public static PdfProcess process(InputStream source) {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = source.read(buf)) != -1) {
+                out.write(buf, 0, n);
+            }
+            return new PdfProcess(out.toByteArray());
+        } catch (IOException e) {
+            throw new PdfException("Failed to read PDF.", e);
+        }
     }
 
     /**

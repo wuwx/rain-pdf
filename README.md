@@ -79,6 +79,54 @@ try (InputStream inputStream = s3Object.getObjectContent();
 }
 ```
 
+## Fluent API
+
+Use the fluent API to chain multiple operations together.
+
+```java
+import io.github.wuwx.rain.pdf.PdfUtil;
+import io.github.wuwx.rain.pdf.watermark.WatermarkOptions;
+import io.github.wuwx.rain.pdf.rasterize.RasterizeOptions;
+
+import java.nio.file.Paths;
+
+// Watermark then rasterize
+PdfUtil.process(Paths.get("input.pdf"))
+        .watermark("DRAFT")
+        .rasterize()
+        .write(Paths.get("output.pdf"));
+
+// Watermark with custom options
+PdfUtil.process(Paths.get("input.pdf"))
+        .watermark(WatermarkOptions.builder()
+                .text("CONFIDENTIAL")
+                .fontSize(36)
+                .opacity(0.3f)
+                .build())
+        .write(Paths.get("output.pdf"));
+
+// Rasterize with custom DPI
+PdfUtil.process(Paths.get("input.pdf"))
+        .rasterize(RasterizeOptions.ofDpi(72.0f))
+        .write(Paths.get("output.pdf"));
+
+// Write to OutputStream
+PdfUtil.process(Paths.get("input.pdf"))
+        .watermark("DRAFT")
+        .rasterize()
+        .write(response.getOutputStream());
+
+// Get byte array
+byte[] pdfBytes = PdfUtil.process(Paths.get("input.pdf"))
+        .watermark("DRAFT")
+        .toByteArray();
+
+// Process from InputStream
+PdfUtil.process(s3Object.getObjectContent())
+        .watermark("DRAFT")
+        .write(Paths.get("output.pdf"));
+```
+
 ## Advanced Usage
 
 ```java
@@ -236,6 +284,7 @@ Before release, configure:
 rain-pdf/
 ├── src/main/java/io/github/wuwx/rain/pdf/
 │   ├── PdfUtil.java              # Main API class
+│   ├── PdfProcess.java           # Fluent API
 │   ├── PdfException.java         # Exception class
 │   ├── rasterize/
 │   │   ├── RasterizeOptions.java # Rasterize options

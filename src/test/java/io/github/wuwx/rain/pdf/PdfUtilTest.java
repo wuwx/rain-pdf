@@ -268,6 +268,102 @@ public class PdfUtilTest {
         }
     }
 
+    @Test
+    public void shouldProcessWithFluentApiWatermarkAndRasterize() throws IOException {
+        Path tempDir = Files.createTempDirectory("rain-pdf-test-fluent");
+        Path input = tempDir.resolve("input.pdf");
+        Path output = tempDir.resolve("output.pdf");
+
+        createSimplePdf(input, 2);
+
+        PdfUtil.process(input)
+                .watermark("DRAFT")
+                .rasterize()
+                .write(output);
+
+        assertTrue(Files.exists(output));
+        assertTrue(Files.size(output) > 0);
+    }
+
+    @Test
+    public void shouldProcessWithFluentApiWatermarkOnly() throws IOException {
+        Path tempDir = Files.createTempDirectory("rain-pdf-test-fluent-watermark");
+        Path input = tempDir.resolve("input.pdf");
+        Path output = tempDir.resolve("output.pdf");
+
+        createSimplePdf(input, 1);
+
+        PdfUtil.process(input)
+                .watermark(WatermarkOptions.builder()
+                        .text("CONFIDENTIAL")
+                        .fontSize(36)
+                        .build())
+                .write(output);
+
+        assertTrue(Files.exists(output));
+        assertTrue(Files.size(output) > 0);
+    }
+
+    @Test
+    public void shouldProcessWithFluentApiRasterizeOnly() throws IOException {
+        Path tempDir = Files.createTempDirectory("rain-pdf-test-fluent-rasterize");
+        Path input = tempDir.resolve("input.pdf");
+        Path output = tempDir.resolve("output.pdf");
+
+        createSimplePdf(input, 1);
+
+        PdfUtil.process(input)
+                .rasterize(RasterizeOptions.ofDpi(72.0f))
+                .write(output);
+
+        assertTrue(Files.exists(output));
+        assertTrue(Files.size(output) > 0);
+    }
+
+    @Test
+    public void shouldProcessWithFluentApiToOutputStream() throws IOException {
+        Path tempDir = Files.createTempDirectory("rain-pdf-test-fluent-stream");
+        Path input = tempDir.resolve("input.pdf");
+
+        createSimplePdf(input, 1);
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        PdfUtil.process(input)
+                .watermark("TEST")
+                .write(outputStream);
+
+        byte[] outputBytes = outputStream.toByteArray();
+        assertTrue(outputBytes.length > 0);
+    }
+
+    @Test
+    public void shouldProcessWithFluentApiFromInputStream() throws IOException {
+        byte[] inputBytes = createSimplePdfBytes(1);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        PdfUtil.process(new ByteArrayInputStream(inputBytes))
+                .watermark("STREAM")
+                .write(outputStream);
+
+        byte[] outputBytes = outputStream.toByteArray();
+        assertTrue(outputBytes.length > 0);
+    }
+
+    @Test
+    public void shouldProcessWithFluentApiToByteArray() throws IOException {
+        Path tempDir = Files.createTempDirectory("rain-pdf-test-fluent-bytes");
+        Path input = tempDir.resolve("input.pdf");
+
+        createSimplePdf(input, 1);
+
+        byte[] result = PdfUtil.process(input)
+                .watermark("TEST")
+                .toByteArray();
+
+        assertTrue(result.length > 0);
+    }
+
     private void createSimplePdf(Path output, int pages) throws IOException {
         try (PDDocument document = new PDDocument()) {
             for (int i = 0; i < pages; i++) {
