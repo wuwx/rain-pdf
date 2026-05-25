@@ -16,7 +16,7 @@ A lightweight Java 8 PDF watermark utility with a Hutool-style static API.
   - horizontal spacing: 150
   - vertical spacing: 150
   - DPI: 150
-- Supports custom style through WatermarkOptions and ImageOptions
+- Supports custom style through WatermarkOptions and RasterizeOptions
 - Runtime exception style for simple integration
 - Built-in CJK font support for Chinese/Japanese/Korean text
 - Automatic output directory creation
@@ -44,7 +44,7 @@ import io.github.wuwx.rain.pdf.PdfUtil;
 
 import java.nio.file.Paths;
 
-PdfUtil.addWatermark(
+PdfUtil.watermark(
     Paths.get("input.pdf"),
     Paths.get("output.pdf"),
     "DRAFT"
@@ -57,12 +57,12 @@ Use stream overloads when PDFs come from object storage or need to be written di
 
 ```java
 import io.github.wuwx.rain.pdf.PdfUtil;
-import io.github.wuwx.rain.pdf.image.ImageOptions;
+import io.github.wuwx.rain.pdf.rasterize.RasterizeOptions;
 import io.github.wuwx.rain.pdf.watermark.WatermarkOptions;
 
 try (InputStream inputStream = s3Object.getObjectContent();
      OutputStream outputStream = response.getOutputStream()) {
-    PdfUtil.addWatermark(
+    PdfUtil.watermark(
         inputStream,
         outputStream,
         WatermarkOptions.ofText("CONFIDENTIAL")
@@ -71,10 +71,10 @@ try (InputStream inputStream = s3Object.getObjectContent();
 
 try (InputStream inputStream = s3Object.getObjectContent();
      OutputStream outputStream = response.getOutputStream()) {
-    PdfUtil.convertToImagePdf(
+    PdfUtil.rasterize(
         inputStream,
         outputStream,
-        ImageOptions.ofDpi(150.0f)
+        RasterizeOptions.ofDpi(150.0f)
     );
 }
 ```
@@ -96,7 +96,7 @@ WatermarkOptions options = WatermarkOptions.builder()
     .color(new Color(128, 128, 128))
     .build();
 
-PdfUtil.addWatermark(
+PdfUtil.watermark(
     Paths.get("input.pdf"),
     Paths.get("output.pdf"),
     options
@@ -118,7 +118,7 @@ WatermarkOptions options = WatermarkOptions.builder()
     .verticalSpacing(200.0f)
     .build();
 
-PdfUtil.addWatermark(
+PdfUtil.watermark(
     Paths.get("input.pdf"),
     Paths.get("output.pdf"),
     options
@@ -148,7 +148,7 @@ import io.github.wuwx.rain.pdf.PdfUtil;
 import java.nio.file.Paths;
 
 // Using default DPI (150)
-PdfUtil.convertToImagePdf(
+PdfUtil.rasterize(
     Paths.get("input.pdf"),
     Paths.get("output.pdf")
 );
@@ -158,23 +158,23 @@ PdfUtil.convertToImagePdf(
 
 ```java
 import io.github.wuwx.rain.pdf.PdfUtil;
-import io.github.wuwx.rain.pdf.image.ImageOptions;
+import io.github.wuwx.rain.pdf.rasterize.RasterizeOptions;
 
 import java.nio.file.Paths;
 
-ImageOptions options = ImageOptions.builder()
+RasterizeOptions options = RasterizeOptions.builder()
     .dpi(72.0f)
     .imageFormat("png")
     .build();
 
-PdfUtil.convertToImagePdf(
+PdfUtil.rasterize(
     Paths.get("input.pdf"),
     Paths.get("output.pdf"),
     options
 );
 ```
 
-### ImageOptions Parameters
+### RasterizeOptions Parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -200,23 +200,12 @@ WatermarkOptions options = WatermarkOptions.builder()
 
 ## Exception Handling
 
-The library throws runtime exceptions for error conditions:
-
-- `PdfException`: General PDF processing errors
-- `PdfWatermarkException`: Watermark-specific errors (missing input, invalid paths, font issues)
-- `PdfImageException`: Image conversion-specific errors (missing input, invalid paths, conversion failures)
+The library throws `PdfException` (a `RuntimeException`) for all error conditions:
 
 ```java
 try {
-    PdfUtil.addWatermark(inputPath, outputPath, "WATERMARK");
-} catch (PdfWatermarkException e) {
-    // Handle watermark-specific errors
-    System.err.println("Watermark error: " + e.getMessage());
-} catch (PdfImageException e) {
-    // Handle image conversion errors
-    System.err.println("Image conversion error: " + e.getMessage());
+    PdfUtil.watermark(inputPath, outputPath, "WATERMARK");
 } catch (PdfException e) {
-    // Handle general PDF errors
     System.err.println("PDF error: " + e.getMessage());
 }
 ```
@@ -247,15 +236,12 @@ Before release, configure:
 rain-pdf/
 ├── src/main/java/io/github/wuwx/rain/pdf/
 │   ├── PdfUtil.java              # Main API class
-│   ├── exception/
-│   │   ├── PdfException.java     # Base exception
-│   │   ├── PdfImageException.java # Image conversion exception
-│   │   └── PdfWatermarkException.java # Watermark exception
-│   ├── image/
-│   │   ├── ImageOptions.java     # Image conversion options
-│   │   └── PdfToImageConverter.java # PDF to image converter
+│   ├── PdfException.java         # Exception class
+│   ├── rasterize/
+│   │   ├── RasterizeOptions.java # Rasterize options
+│   │   └── RasterizeProcessor.java # PDF rasterizer
 │   └── watermark/
-│       ├── PdfWatermarker.java   # Core watermark logic
+│       ├── WatermarkProcessor.java # Core watermark logic
 │       └── WatermarkOptions.java # Configuration builder
 ├── src/main/resources/fonts/
 │   └── LXGWWenKai-Regular.ttf   # Bundled CJK font

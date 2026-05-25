@@ -1,6 +1,6 @@
 package io.github.wuwx.rain.pdf;
 
-import io.github.wuwx.rain.pdf.image.ImageOptions;
+import io.github.wuwx.rain.pdf.rasterize.RasterizeOptions;
 import io.github.wuwx.rain.pdf.watermark.WatermarkOptions;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -27,7 +27,7 @@ public class PdfUtilTest {
         Path output = tempDir.resolve("output.pdf");
 
         createSimplePdf(input, 2);
-        PdfUtil.addWatermark(input, output, "DRAFT");
+        PdfUtil.watermark(input, output, "DRAFT");
 
         assertTrue(Files.exists(output));
         assertTrue(Files.size(output) > 0);
@@ -45,7 +45,7 @@ public class PdfUtilTest {
         Path output = tempDir.resolve("output.pdf");
 
         try {
-            PdfUtil.addWatermark(input, output, "DRAFT");
+            PdfUtil.watermark(input, output, "DRAFT");
             fail("Expected runtime exception for missing input");
         } catch (RuntimeException expected) {
             assertTrue(expected.getMessage().contains("Input PDF does not exist"));
@@ -60,7 +60,7 @@ public class PdfUtilTest {
         createSimplePdf(input, 1);
 
         try {
-            PdfUtil.addWatermark(input, output, (String) null);
+            PdfUtil.watermark(input, output, (String) null);
             fail("Expected NullPointerException for null text");
         } catch (NullPointerException expected) {
             assertEquals("text must not be null", expected.getMessage());
@@ -75,7 +75,7 @@ public class PdfUtilTest {
         createSimplePdf(input, 1);
 
         try {
-            PdfUtil.addWatermark(input, output, (WatermarkOptions) null);
+            PdfUtil.watermark(input, output, (WatermarkOptions) null);
             fail("Expected NullPointerException for null options");
         } catch (NullPointerException expected) {
             assertEquals("options must not be null", expected.getMessage());
@@ -89,7 +89,7 @@ public class PdfUtilTest {
         Path output = tempDir.resolve("output.pdf");
         createSimplePdf(input, 1);
 
-        PdfUtil.addWatermark(input, output, "内部资料");
+        PdfUtil.watermark(input, output, "内部资料");
 
         assertTrue(Files.exists(output));
         assertTrue(Files.size(output) > 0);
@@ -108,7 +108,7 @@ public class PdfUtilTest {
                 .build();
 
         try {
-            PdfUtil.addWatermark(input, output, options);
+            PdfUtil.watermark(input, output, options);
             fail("Expected runtime exception for missing custom CJK font");
         } catch (RuntimeException expected) {
             assertTrue(expected.getMessage().contains("Chinese text detected"));
@@ -130,7 +130,7 @@ public class PdfUtilTest {
                 .color(Color.GRAY)
                 .build();
 
-        PdfUtil.addWatermark(input, output, options);
+        PdfUtil.watermark(input, output, options);
 
         assertTrue(Files.exists(output));
         assertTrue(Files.size(output) > 0);
@@ -146,7 +146,7 @@ public class PdfUtilTest {
         byte[] inputBytes = createSimplePdfBytes(2);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        PdfUtil.addWatermark(new ByteArrayInputStream(inputBytes), outputStream, "STREAM");
+        PdfUtil.watermark(new ByteArrayInputStream(inputBytes), outputStream, "STREAM");
 
         byte[] outputBytes = outputStream.toByteArray();
         assertTrue(outputBytes.length > 0);
@@ -171,7 +171,7 @@ public class PdfUtilTest {
                 .verticalSpacing(200.0f)
                 .build();
 
-        PdfUtil.addWatermark(input, output, options);
+        PdfUtil.watermark(input, output, options);
 
         assertTrue(Files.exists(output));
         assertTrue(Files.size(output) > 0);
@@ -189,7 +189,7 @@ public class PdfUtilTest {
         Path output = tempDir.resolve("output.pdf");
 
         createSimplePdf(input, 2);
-        PdfUtil.convertToImagePdf(input, output);
+        PdfUtil.rasterize(input, output);
 
         assertTrue(Files.exists(output));
         assertTrue(Files.size(output) > 0);
@@ -207,12 +207,12 @@ public class PdfUtilTest {
         Path output = tempDir.resolve("output.pdf");
 
         createSimplePdf(input, 1);
-        ImageOptions options = ImageOptions.builder()
+        RasterizeOptions options = RasterizeOptions.builder()
                 .dpi(72.0f)
                 .imageFormat("png")
                 .build();
 
-        PdfUtil.convertToImagePdf(input, output, options);
+        PdfUtil.rasterize(input, output, options);
 
         assertTrue(Files.exists(output));
         assertTrue(Files.size(output) > 0);
@@ -228,7 +228,7 @@ public class PdfUtilTest {
         byte[] inputBytes = createSimplePdfBytes(1);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        PdfUtil.convertToImagePdf(new ByteArrayInputStream(inputBytes), outputStream);
+        PdfUtil.rasterize(new ByteArrayInputStream(inputBytes), outputStream);
 
         byte[] outputBytes = outputStream.toByteArray();
         assertTrue(outputBytes.length > 0);
@@ -246,7 +246,7 @@ public class PdfUtilTest {
         Path output = tempDir.resolve("output.pdf");
 
         try {
-            PdfUtil.convertToImagePdf(input, output);
+            PdfUtil.rasterize(input, output);
             fail("Expected runtime exception for missing input");
         } catch (RuntimeException expected) {
             assertTrue(expected.getMessage().contains("Input PDF does not exist"));
@@ -261,7 +261,7 @@ public class PdfUtilTest {
         createSimplePdf(input, 1);
 
         try {
-            PdfUtil.convertToImagePdf(input, output, (ImageOptions) null);
+            PdfUtil.rasterize(input, output, (RasterizeOptions) null);
             fail("Expected NullPointerException for null options");
         } catch (NullPointerException expected) {
             assertEquals("options must not be null", expected.getMessage());

@@ -1,4 +1,4 @@
-package io.github.wuwx.rain.pdf.exception;
+package io.github.wuwx.rain.pdf;
 
 public class PdfException extends RuntimeException {
     public PdfException(String message) {

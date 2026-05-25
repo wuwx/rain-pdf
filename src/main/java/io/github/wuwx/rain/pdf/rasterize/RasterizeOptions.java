@@ -1,16 +1,13 @@
-package io.github.wuwx.rain.pdf.image;
+package io.github.wuwx.rain.pdf.rasterize;
 
-/**
- * Immutable parameters for PDF to image conversion.
- */
-public final class ImageOptions {
+public final class RasterizeOptions {
     public static final float DEFAULT_DPI = 150.0f;
     public static final String DEFAULT_IMAGE_FORMAT = "png";
 
     private final float dpi;
     private final String imageFormat;
 
-    private ImageOptions(Builder builder) {
+    private RasterizeOptions(Builder builder) {
         this.dpi = builder.dpi;
         this.imageFormat = builder.imageFormat;
     }
@@ -19,7 +16,7 @@ public final class ImageOptions {
         return new Builder();
     }
 
-    public static ImageOptions ofDpi(float dpi) {
+    public static RasterizeOptions ofDpi(float dpi) {
         return builder().dpi(dpi).build();
     }
 
@@ -48,14 +45,14 @@ public final class ImageOptions {
             return this;
         }
 
-        public ImageOptions build() {
+        public RasterizeOptions build() {
             if (dpi <= 0) {
                 throw new IllegalArgumentException("dpi must be greater than 0.");
             }
             if (imageFormat == null || imageFormat.trim().isEmpty()) {
                 throw new IllegalArgumentException("imageFormat must not be blank.");
             }
-            return new ImageOptions(this);
+            return new RasterizeOptions(this);
         }
     }
 }

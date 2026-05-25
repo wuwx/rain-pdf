@@ -1,9 +1,8 @@
 package io.github.wuwx.rain.pdf;
 
-import io.github.wuwx.rain.pdf.exception.PdfException;
-import io.github.wuwx.rain.pdf.image.ImageOptions;
-import io.github.wuwx.rain.pdf.image.PdfToImageConverter;
-import io.github.wuwx.rain.pdf.watermark.PdfWatermarker;
+import io.github.wuwx.rain.pdf.rasterize.RasterizeOptions;
+import io.github.wuwx.rain.pdf.rasterize.RasterizeProcessor;
+import io.github.wuwx.rain.pdf.watermark.WatermarkProcessor;
 import io.github.wuwx.rain.pdf.watermark.WatermarkOptions;
 
 import java.io.InputStream;
@@ -12,8 +11,8 @@ import java.util.Objects;
 import java.nio.file.Path;
 
 public final class PdfUtil {
-    private static final PdfWatermarker WATERMARKER = new PdfWatermarker();
-    private static final PdfToImageConverter IMAGE_CONVERTER = new PdfToImageConverter();
+    private static final WatermarkProcessor WATERMARKER = new WatermarkProcessor();
+    private static final RasterizeProcessor RASTERIZER = new RasterizeProcessor();
 
     private PdfUtil() {
     }
@@ -21,7 +20,7 @@ public final class PdfUtil {
     /**
      * Add a text watermark with default visual options.
      */
-    public static void addWatermark(Path inputPath, Path outputPath, String text) {
+    public static void watermark(Path inputPath, Path outputPath, String text) {
         Objects.requireNonNull(text, "text must not be null");
         try {
             WATERMARKER.addTextWatermark(inputPath, outputPath, WatermarkOptions.ofText(text));
@@ -35,7 +34,7 @@ public final class PdfUtil {
     /**
      * Add a text watermark with customized options.
      */
-    public static void addWatermark(Path inputPath, Path outputPath, WatermarkOptions options) {
+    public static void watermark(Path inputPath, Path outputPath, WatermarkOptions options) {
         Objects.requireNonNull(options, "options must not be null");
         try {
             WATERMARKER.addTextWatermark(inputPath, outputPath, options);
@@ -49,7 +48,7 @@ public final class PdfUtil {
     /**
      * Add a text watermark from an input stream to an output stream with default visual options.
      */
-    public static void addWatermark(InputStream inputStream, OutputStream outputStream, String text) {
+    public static void watermark(InputStream inputStream, OutputStream outputStream, String text) {
         Objects.requireNonNull(text, "text must not be null");
         try {
             WATERMARKER.addTextWatermark(inputStream, outputStream, WatermarkOptions.ofText(text));
@@ -63,7 +62,7 @@ public final class PdfUtil {
     /**
      * Add a text watermark from an input stream to an output stream with customized options.
      */
-    public static void addWatermark(InputStream inputStream, OutputStream outputStream, WatermarkOptions options) {
+    public static void watermark(InputStream inputStream, OutputStream outputStream, WatermarkOptions options) {
         Objects.requireNonNull(options, "options must not be null");
         try {
             WATERMARKER.addTextWatermark(inputStream, outputStream, options);
@@ -77,54 +76,54 @@ public final class PdfUtil {
     /**
      * Convert a PDF to an image-based PDF with default DPI (150).
      */
-    public static void convertToImagePdf(Path inputPath, Path outputPath) {
+    public static void rasterize(Path inputPath, Path outputPath) {
         try {
-            IMAGE_CONVERTER.convertToImagePdf(inputPath, outputPath, ImageOptions.ofDpi(ImageOptions.DEFAULT_DPI));
+            RASTERIZER.rasterize(inputPath, outputPath, RasterizeOptions.ofDpi(RasterizeOptions.DEFAULT_DPI));
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
-            throw new PdfException("Unexpected error while converting PDF to image.", e);
+            throw new PdfException("Unexpected error while rasterizing PDF.", e);
         }
     }
 
     /**
      * Convert a PDF to an image-based PDF with customized options.
      */
-    public static void convertToImagePdf(Path inputPath, Path outputPath, ImageOptions options) {
+    public static void rasterize(Path inputPath, Path outputPath, RasterizeOptions options) {
         Objects.requireNonNull(options, "options must not be null");
         try {
-            IMAGE_CONVERTER.convertToImagePdf(inputPath, outputPath, options);
+            RASTERIZER.rasterize(inputPath, outputPath, options);
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
-            throw new PdfException("Unexpected error while converting PDF to image.", e);
+            throw new PdfException("Unexpected error while rasterizing PDF.", e);
         }
     }
 
     /**
      * Convert a PDF stream to an image-based PDF with default DPI (150).
      */
-    public static void convertToImagePdf(InputStream inputStream, OutputStream outputStream) {
+    public static void rasterize(InputStream inputStream, OutputStream outputStream) {
         try {
-            IMAGE_CONVERTER.convertToImagePdf(inputStream, outputStream, ImageOptions.ofDpi(ImageOptions.DEFAULT_DPI));
+            RASTERIZER.rasterize(inputStream, outputStream, RasterizeOptions.ofDpi(RasterizeOptions.DEFAULT_DPI));
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
-            throw new PdfException("Unexpected error while converting PDF to image.", e);
+            throw new PdfException("Unexpected error while rasterizing PDF.", e);
         }
     }
 
     /**
      * Convert a PDF stream to an image-based PDF with customized options.
      */
-    public static void convertToImagePdf(InputStream inputStream, OutputStream outputStream, ImageOptions options) {
+    public static void rasterize(InputStream inputStream, OutputStream outputStream, RasterizeOptions options) {
         Objects.requireNonNull(options, "options must not be null");
         try {
-            IMAGE_CONVERTER.convertToImagePdf(inputStream, outputStream, options);
+            RASTERIZER.rasterize(inputStream, outputStream, options);
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
-            throw new PdfException("Unexpected error while converting PDF to image.", e);
+            throw new PdfException("Unexpected error while rasterizing PDF.", e);
         }
     }
 }

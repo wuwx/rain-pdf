@@ -1,6 +1,6 @@
 package io.github.wuwx.rain.pdf.watermark;
 
-import io.github.wuwx.rain.pdf.exception.PdfWatermarkException;
+import io.github.wuwx.rain.pdf.PdfException;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -21,17 +21,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 
-public final class PdfWatermarker {
+public final class WatermarkProcessor {
     public void addTextWatermark(Path inputPath, Path outputPath, WatermarkOptions options) {
         Objects.requireNonNull(options, "options must not be null");
         if (inputPath == null || outputPath == null) {
-            throw new PdfWatermarkException("inputPath and outputPath must not be null.");
+            throw new PdfException("inputPath and outputPath must not be null.");
         }
         if (!Files.exists(inputPath) || !Files.isRegularFile(inputPath)) {
-            throw new PdfWatermarkException("Input PDF does not exist: " + inputPath);
+            throw new PdfException("Input PDF does not exist: " + inputPath);
         }
         if (Files.isDirectory(outputPath)) {
-            throw new PdfWatermarkException("Output path must be a file, but got directory: " + outputPath);
+            throw new PdfException("Output path must be a file, but got directory: " + outputPath);
         }
 
         Path parent = outputPath.getParent();
@@ -44,7 +44,7 @@ public final class PdfWatermarker {
                 addTextWatermark(inputStream, outputStream, options);
             }
         } catch (IOException e) {
-            throw new PdfWatermarkException("Failed to add watermark.", e);
+            throw new PdfException("Failed to add watermark.", e);
         }
     }
 
@@ -61,7 +61,7 @@ public final class PdfWatermarker {
             document.save(outputStream);
             outputStream.flush();
         } catch (IOException e) {
-            throw new PdfWatermarkException("Failed to add watermark.", e);
+            throw new PdfException("Failed to add watermark.", e);
         }
     }
 
@@ -121,7 +121,7 @@ public final class PdfWatermarker {
 
         String fontPath = options.getFontResourcePath();
         if (fontPath != null && !fontPath.trim().isEmpty()) {
-            InputStream fontStream = PdfWatermarker.class.getResourceAsStream(fontPath);
+            InputStream fontStream = WatermarkProcessor.class.getResourceAsStream(fontPath);
             if (fontStream != null) {
                 try (InputStream in = fontStream) {
                     return PDType0Font.load(document, in);
@@ -129,7 +129,7 @@ public final class PdfWatermarker {
             }
         }
 
-        throw new PdfWatermarkException(
+        throw new PdfException(
                 "Chinese text detected but bundled CJK font was not found at "
                         + fontPath
                         + ". Add a font file to src/main/resources/fonts/ and keep default path, "

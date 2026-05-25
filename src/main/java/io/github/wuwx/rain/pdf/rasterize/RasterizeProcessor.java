@@ -1,6 +1,6 @@
-package io.github.wuwx.rain.pdf.image;
+package io.github.wuwx.rain.pdf.rasterize;
 
-import io.github.wuwx.rain.pdf.exception.PdfImageException;
+import io.github.wuwx.rain.pdf.PdfException;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -19,17 +19,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 
-public final class PdfToImageConverter {
-    public void convertToImagePdf(Path inputPath, Path outputPath, ImageOptions options) {
+public final class RasterizeProcessor {
+    public void rasterize(Path inputPath, Path outputPath, RasterizeOptions options) {
         Objects.requireNonNull(options, "options must not be null");
         if (inputPath == null || outputPath == null) {
-            throw new PdfImageException("inputPath and outputPath must not be null.");
+            throw new PdfException("inputPath and outputPath must not be null.");
         }
         if (!Files.exists(inputPath) || !Files.isRegularFile(inputPath)) {
-            throw new PdfImageException("Input PDF does not exist: " + inputPath);
+            throw new PdfException("Input PDF does not exist: " + inputPath);
         }
         if (Files.isDirectory(outputPath)) {
-            throw new PdfImageException("Output path must be a file, but got directory: " + outputPath);
+            throw new PdfException("Output path must be a file, but got directory: " + outputPath);
         }
 
         Path parent = outputPath.getParent();
@@ -39,14 +39,14 @@ public final class PdfToImageConverter {
             }
             try (InputStream inputStream = Files.newInputStream(inputPath);
                  OutputStream outputStream = Files.newOutputStream(outputPath)) {
-                convertToImagePdf(inputStream, outputStream, options);
+                rasterize(inputStream, outputStream, options);
             }
         } catch (IOException e) {
-            throw new PdfImageException("Failed to convert PDF to image PDF.", e);
+            throw new PdfException("Failed to rasterize PDF.", e);
         }
     }
 
-    public void convertToImagePdf(InputStream inputStream, OutputStream outputStream, ImageOptions options) {
+    public void rasterize(InputStream inputStream, OutputStream outputStream, RasterizeOptions options) {
         Objects.requireNonNull(inputStream, "inputStream must not be null");
         Objects.requireNonNull(outputStream, "outputStream must not be null");
         Objects.requireNonNull(options, "options must not be null");
@@ -73,7 +73,7 @@ public final class PdfToImageConverter {
             targetDoc.save(outputStream);
             outputStream.flush();
         } catch (IOException e) {
-            throw new PdfImageException("Failed to convert PDF to image PDF.", e);
+            throw new PdfException("Failed to rasterize PDF.", e);
         }
     }
 
