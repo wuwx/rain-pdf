@@ -13,13 +13,16 @@ import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.apache.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState;
 import org.apache.pdfbox.util.Matrix;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Objects;
+import java.util.UUID;
 
 public final class WatermarkProcessor {
     public void addTextWatermark(Path inputPath, Path outputPath, WatermarkOptions options) {
@@ -35,13 +38,27 @@ public final class WatermarkProcessor {
         }
 
         Path parent = outputPath.getParent();
+        Path targetDir = parent != null ? parent : outputPath.toAbsolutePath().getParent();
         try {
+            // 必须先读完输入再开输出流：inputPath 与 outputPath 相同时，后者会先把源文件清空
+            byte[] source = Files.readAllBytes(inputPath);
             if (parent != null) {
                 Files.createDirectories(parent);
             }
-            try (InputStream inputStream = Files.newInputStream(inputPath);
-                 OutputStream outputStream = Files.newOutputStream(outputPath)) {
-                addTextWatermark(inputStream, outputStream, options);
+            Path tempFile = Files.createFile(
+                    targetDir.resolve("." + outputPath.getFileName() + "." + UUID.randomUUID() + ".tmp"));
+            boolean moved = false;
+            try {
+                try (InputStream inputStream = new ByteArrayInputStream(source);
+                     OutputStream outputStream = Files.newOutputStream(tempFile)) {
+                    addTextWatermark(inputStream, outputStream, options);
+                }
+                Files.move(tempFile, outputPath, StandardCopyOption.REPLACE_EXISTING);
+                moved = true;
+            } finally {
+                if (!moved) {
+                    Files.deleteIfExists(tempFile);
+                }
             }
         } catch (IOException e) {
             throw new PdfException("Failed to add watermark.", e);
@@ -60,15 +77,17 @@ public final class WatermarkProcessor {
             }
             document.save(outputStream);
             outputStream.flush();
+        } catch (IllegalArgumentException e) {
+            throw new PdfException("Watermark text cannot be rendered by the selected font: " + e.getMessage(), e);
         } catch (IOException e) {
             throw new PdfException("Failed to add watermark.", e);
         }
     }
 
     private void addWatermarkToPage(PDDocument document, PDPage page, PDFont font, WatermarkOptions options) throws IOException {
-        PDRectangle mediaBox = page.getMediaBox();
-        float pageWidth = mediaBox.getWidth();
-        float pageHeight = mediaBox.getHeight();
+        PDRectangle box = page.getCropBox();
+        float pageWidth = box.getWidth();
+        float pageHeight = box.getHeight();
 
         float textWidth = font.getStringWidth(options.getText()) / 1000.0f * options.getFontSize();
         float textHeight = options.getFontSize();
@@ -79,8 +98,8 @@ public final class WatermarkProcessor {
         int columns = Math.max(1, (int) Math.ceil(pageWidth / horizontalSpacing));
         int rows = Math.max(1, (int) Math.ceil(pageHeight / verticalSpacing));
 
-        float startX = (pageWidth - (columns - 1) * horizontalSpacing) / 2.0f;
-        float startY = (pageHeight - (rows - 1) * verticalSpacing) / 2.0f;
+        float startX = box.getLowerLeftX() + (pageWidth - (columns - 1) * horizontalSpacing) / 2.0f;
+        float startY = box.getLowerLeftY() + (pageHeight - (rows - 1) * verticalSpacing) / 2.0f;
 
         try (PDPageContentStream contentStream = new PDPageContentStream(
                 document,
@@ -115,8 +134,9 @@ public final class WatermarkProcessor {
 
     private PDFont resolveFont(PDDocument document, WatermarkOptions options) throws IOException {
         String text = options.getText();
-        if (!containsChinese(text)) {
-            return new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+        PDFont standard = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+        if (canEncode(standard, text)) {
+            return standard;
         }
 
         String fontPath = options.getFontResourcePath();
@@ -130,21 +150,21 @@ public final class WatermarkProcessor {
         }
 
         throw new PdfException(
-                "Chinese text detected but bundled CJK font was not found at "
+                "Watermark text contains characters that the standard font cannot encode, "
+                        + "but no CJK font was found at "
                         + fontPath
-                        + ". Add a font file to src/main/resources/fonts/ and keep default path, "
+                        + ". Add a font file to src/main/resources/fonts/ and keep the default path, "
                         + "or configure WatermarkOptions.fontResourcePath(...)."
         );
     }
 
-    private boolean containsChinese(String text) {
-        for (int i = 0; i < text.length(); i++) {
-            Character.UnicodeScript script = Character.UnicodeScript.of(text.charAt(i));
-            if (script == Character.UnicodeScript.HAN) {
-                return true;
-            }
+    private boolean canEncode(PDFont font, String text) {
+        try {
+            font.encode(text);
+            return true;
+        } catch (IOException | IllegalArgumentException e) {
+            return false;
         }
-        return false;
     }
 
     private byte[] toByteArray(InputStream inputStream) throws IOException {

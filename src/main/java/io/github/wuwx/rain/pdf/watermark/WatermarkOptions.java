@@ -131,6 +131,9 @@ public final class WatermarkOptions {
             if (text == null || text.trim().isEmpty()) {
                 throw new IllegalArgumentException("Watermark text must not be blank.");
             }
+            if (text.indexOf('\n') >= 0 || text.indexOf('\r') >= 0) {
+                throw new IllegalArgumentException("Watermark text must not contain line breaks.");
+            }
             if (fontSize <= 0) {
                 throw new IllegalArgumentException("fontSize must be greater than 0.");
             }

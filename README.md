@@ -20,6 +20,7 @@ A lightweight Java 8 PDF watermark utility with a Hutool-style static API.
 - Runtime exception style for simple integration
 - Built-in CJK font support for Chinese/Japanese/Korean text
 - Automatic output directory creation
+- Output files are replaced atomically, a failed run never leaves a partial or truncated file
 
 ## Dependencies
 
@@ -33,7 +34,7 @@ A lightweight Java 8 PDF watermark utility with a Hutool-style static API.
 <dependency>
   <groupId>io.github.wuwx</groupId>
   <artifactId>rain-pdf</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
 </dependency>
 ```
 
@@ -177,7 +178,7 @@ PdfUtil.watermark(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| text | String | required | Watermark text content |
+| text | String | required | Single-line watermark text, line breaks are rejected |
 | fontSize | int | 48 | Font size in points |
 | opacity | float | 0.2 | Opacity (0.0-1.0) |
 | rotation | float | -30.0 | Rotation angle in degrees |
@@ -227,15 +228,15 @@ PdfUtil.rasterize(
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | dpi | float | 150.0 | Resolution in dots per inch |
-| imageFormat | String | png | Image format (png, jpg, etc.) |
+| imageFormat | String | png | Image format that has an ImageIO writer (png, jpg, ...) |
 
-## Chinese Text Support
+## Non-ASCII Text Support
 
-The library is designed to load a bundled font from:
+Text that the standard Helvetica font cannot encode (Chinese, Japanese, Korean, Cyrillic, symbols, ...) is rendered with the bundled font loaded from:
 
 - /fonts/LXGWWenKai-Regular.ttf
 
-If your watermark text contains Han characters and the font resource is missing, the library throws a clear runtime exception.
+If that font resource is missing, the library throws a clear runtime exception.
 
 For production usage, keep a CJK font file at that path in your runtime classpath, or configure a custom font resource path:
 
@@ -248,7 +249,7 @@ WatermarkOptions options = WatermarkOptions.builder()
 
 ## Exception Handling
 
-The library throws `PdfException` (a `RuntimeException`) for all error conditions:
+PDF processing failures are reported as `PdfException` (a `RuntimeException`). Invalid arguments fail earlier and differently: `NullPointerException` for null inputs, `IllegalArgumentException` for values rejected by the option builders (blank text, line breaks, unsupported `imageFormat`, ...):
 
 ```java
 try {
@@ -266,15 +267,15 @@ mvn clean test
 
 ## Maven Central Release
 
-Use a release profile with GPG signing and Nexus staging:
+Use GPG signing and the Central Portal publishing plugin:
 
 ```bash
-mvn -P release clean deploy
+mvn clean deploy
 ```
 
 Before release, configure:
 
-- OSSRH credentials in ~/.m2/settings.xml (server id: ossrh)
+- Central Portal credentials in ~/.m2/settings.xml (server id: central)
 - GPG key and passphrase
 - GitHub repository metadata in pom.xml
 
@@ -292,10 +293,15 @@ rain-pdf/
 │   └── watermark/
 │       ├── WatermarkProcessor.java # Core watermark logic
 │       └── WatermarkOptions.java # Configuration builder
-├── src/main/resources/fonts/
-│   └── LXGWWenKai-Regular.ttf   # Bundled CJK font
+├── src/main/resources/
+│   ├── fonts/
+│   │   └── LXGWWenKai-Regular.ttf   # Bundled CJK font
+│   └── META-INF/
+│       └── OFL.txt                  # Font license text, packaged into the jar
 └── src/test/java/io/github/wuwx/rain/pdf/
-    ├── PdfUtilTest.java          # Main API tests
+    ├── PdfUtilTest.java              # Main API tests
+    ├── rasterize/
+    │   └── RasterizeOptionsTest.java # Options tests
     └── watermark/
         └── WatermarkOptionsTest.java # Options tests
 ```
@@ -303,3 +309,5 @@ rain-pdf/
 ## License
 
 Apache License 2.0
+
+The bundled font `fonts/LXGWWenKai-Regular.ttf` is redistributed under the SIL Open Font License 1.1. The full license text ships inside the jar at `META-INF/OFL.txt`; see `THIRD_PARTY_NOTICES.md`.

@@ -48,6 +48,16 @@ public class WatermarkOptionsTest {
     }
 
     @Test
+    public void shouldRejectTextWithLineBreaks() {
+        try {
+            WatermarkOptions.builder().text("LINE1\nLINE2").build();
+            fail("Expected IllegalArgumentException for text with line breaks");
+        } catch (IllegalArgumentException expected) {
+            assertEquals("Watermark text must not contain line breaks.", expected.getMessage());
+        }
+    }
+
+    @Test
     public void shouldRejectInvalidOpacity() {
         try {
             WatermarkOptions.builder().text("DRAFT").opacity(1.1f).build();

@@ -6,7 +6,7 @@
 
     <groupId>io.github.wuwx</groupId>
     <artifactId>rain-pdf</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <name>rain-pdf</name>
     <description>Lightweight PDF watermark utility with Hutool-style API.</description>
     <url>https://github.com/wuwx/rain-pdf</url>
@@ -63,11 +63,27 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>${project.basedir}</directory>
+                <targetPath>META-INF</targetPath>
+                <includes>
+                    <include>LICENSE</include>
+                    <include>THIRD_PARTY_NOTICES.md</include>
+                </includes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
                 <version>3.3.1</version>
+                <configuration>
+                    <excludeResources>true</excludeResources>
+                </configuration>
                 <executions>
                     <execution>
                         <id>attach-sources</id>

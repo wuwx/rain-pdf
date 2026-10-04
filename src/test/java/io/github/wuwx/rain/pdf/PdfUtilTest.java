@@ -3,16 +3,21 @@ package io.github.wuwx.rain.pdf;
 import io.github.wuwx.rain.pdf.rasterize.RasterizeOptions;
 import io.github.wuwx.rain.pdf.watermark.WatermarkOptions;
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.contentstream.operator.Operator;
+import org.apache.pdfbox.pdfparser.PDFStreamParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.junit.Test;
 
 import java.awt.Color;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -111,7 +116,172 @@ public class PdfUtilTest {
             PdfUtil.watermark(input, output, options);
             fail("Expected runtime exception for missing custom CJK font");
         } catch (RuntimeException expected) {
-            assertTrue(expected.getMessage().contains("Chinese text detected"));
+            assertTrue(expected.getMessage().contains("no CJK font was found at"));
+        }
+    }
+
+    @Test
+    public void shouldWatermarkJapaneseKanaUsingBundledFont() throws IOException {
+        Path tempDir = Files.createTempDirectory("rain-pdf-test-kana");
+        Path input = tempDir.resolve("input.pdf");
+        Path output = tempDir.resolve("output.pdf");
+        createSimplePdf(input, 1);
+
+        PdfUtil.watermark(input, output, "こんにちは");
+
+        assertTrue(Files.exists(output));
+        assertTrue(Files.size(output) > 0);
+    }
+
+    @Test
+    public void shouldWrapUnsupportedCharactersInPdfException() throws IOException {
+        Path tempDir = Files.createTempDirectory("rain-pdf-test-unsupported-char");
+        Path input = tempDir.resolve("input.pdf");
+        Path output = tempDir.resolve("output.pdf");
+        createSimplePdf(input, 1);
+
+        try {
+            PdfUtil.watermark(input, output, "REPORT \uD83D\uDE00");
+            fail("Expected PdfException for characters the font cannot render");
+        } catch (PdfException expected) {
+            assertTrue(expected.getMessage().contains("cannot be rendered"));
+        }
+    }
+
+    @Test
+    public void shouldKeepSourceFileWhenWatermarkingInPlace() throws IOException {
+        Path tempDir = Files.createTempDirectory("rain-pdf-test-in-place");
+        Path file = tempDir.resolve("in-place.pdf");
+        createSimplePdf(file, 2);
+
+        PdfUtil.watermark(file, file, "DRAFT");
+
+        assertTrue(Files.size(file) > 0);
+        try (PDDocument outDoc = Loader.loadPDF(file.toFile())) {
+            assertEquals(2, outDoc.getNumberOfPages());
+        }
+    }
+
+    @Test
+    public void shouldKeepSourceFileWhenRasterizingInPlace() throws IOException {
+        Path tempDir = Files.createTempDirectory("rain-pdf-test-image-in-place");
+        Path file = tempDir.resolve("in-place.pdf");
+        createSimplePdf(file, 1);
+
+        PdfUtil.rasterize(file, file);
+
+        assertTrue(Files.size(file) > 0);
+        try (PDDocument outDoc = Loader.loadPDF(file.toFile())) {
+            assertEquals(1, outDoc.getNumberOfPages());
+        }
+    }
+
+    @Test
+    public void shouldKeepExistingOutputWhenWatermarkFails() throws IOException {
+        Path tempDir = Files.createTempDirectory("rain-pdf-test-watermark-failure");
+        Path input = tempDir.resolve("input.pdf");
+        Path output = tempDir.resolve("output.pdf");
+        createSimplePdf(input, 1);
+        Files.write(output, "KEEP ME".getBytes(StandardCharsets.UTF_8));
+
+        try {
+            PdfUtil.watermark(input, output, "REPORT \uD83D\uDE00");
+            fail("Expected PdfException for characters the font cannot render");
+        } catch (PdfException expected) {
+            assertTrue(expected.getMessage().contains("cannot be rendered"));
+        }
+
+        assertEquals("KEEP ME", new String(Files.readAllBytes(output), StandardCharsets.UTF_8));
+        try (Stream<Path> files = Files.list(tempDir)) {
+            assertEquals(2L, files.count());
+        }
+    }
+
+    @Test
+    public void shouldKeepExistingOutputWhenRasterizingFails() throws IOException {
+        Path tempDir = Files.createTempDirectory("rain-pdf-test-rasterize-failure");
+        Path input = tempDir.resolve("input.pdf");
+        Path output = tempDir.resolve("output.pdf");
+        Files.write(input, "not a pdf".getBytes(StandardCharsets.UTF_8));
+        Files.write(output, "KEEP ME".getBytes(StandardCharsets.UTF_8));
+
+        try {
+            PdfUtil.rasterize(input, output);
+            fail("Expected PdfException for a broken input PDF");
+        } catch (PdfException expected) {
+            assertTrue(expected.getMessage().contains("Failed to rasterize PDF."));
+        }
+
+        assertEquals("KEEP ME", new String(Files.readAllBytes(output), StandardCharsets.UTF_8));
+        try (Stream<Path> files = Files.list(tempDir)) {
+            assertEquals(2L, files.count());
+        }
+    }
+
+    @Test
+    public void shouldRasterizeRotatedPageKeepingOrientation() throws IOException {
+        Path tempDir = Files.createTempDirectory("rain-pdf-test-rotate");
+        Path input = tempDir.resolve("input.pdf");
+        Path output = tempDir.resolve("output.pdf");
+
+        try (PDDocument document = new PDDocument()) {
+            PDPage page = new PDPage(PDRectangle.A4);
+            page.setRotation(90);
+            document.addPage(page);
+            document.save(input.toFile());
+        }
+
+        PdfUtil.rasterize(input, output);
+
+        try (PDDocument outDoc = Loader.loadPDF(output.toFile())) {
+            PDRectangle box = outDoc.getPage(0).getMediaBox();
+            assertEquals(PDRectangle.A4.getHeight(), box.getWidth(), 1.0f);
+            assertEquals(PDRectangle.A4.getWidth(), box.getHeight(), 1.0f);
+        }
+    }
+
+    @Test
+    public void shouldRasterizeUsingCropBoxSize() throws IOException {
+        Path tempDir = Files.createTempDirectory("rain-pdf-test-crop-box");
+        Path input = tempDir.resolve("input.pdf");
+        Path output = tempDir.resolve("output.pdf");
+
+        try (PDDocument document = new PDDocument()) {
+            PDPage page = new PDPage(PDRectangle.A3);
+            page.setCropBox(new PDRectangle(20, 20, PDRectangle.A5.getWidth(), PDRectangle.A5.getHeight()));
+            document.addPage(page);
+            document.save(input.toFile());
+        }
+
+        PdfUtil.rasterize(input, output);
+
+        try (PDDocument outDoc = Loader.loadPDF(output.toFile())) {
+            PDRectangle box = outDoc.getPage(0).getMediaBox();
+            assertEquals(PDRectangle.A5.getWidth(), box.getWidth(), 1.0f);
+            assertEquals(PDRectangle.A5.getHeight(), box.getHeight(), 1.0f);
+        }
+    }
+
+    @Test
+    public void shouldComputeWatermarkGridFromCropBox() throws IOException {
+        Path tempDir = Files.createTempDirectory("rain-pdf-test-watermark-crop-box");
+        Path input = tempDir.resolve("input.pdf");
+        Path output = tempDir.resolve("output.pdf");
+
+        try (PDDocument document = new PDDocument()) {
+            PDPage page = new PDPage(PDRectangle.A3);
+            page.setCropBox(new PDRectangle(20, 20, PDRectangle.A5.getWidth(), PDRectangle.A5.getHeight()));
+            document.addPage(page);
+            document.save(input.toFile());
+        }
+
+        PdfUtil.watermark(input, output, "DRAFT");
+
+        try (PDDocument outDoc = Loader.loadPDF(output.toFile())) {
+            PDRectangle cropBox = outDoc.getPage(0).getCropBox();
+            int columns = (int) Math.ceil(cropBox.getWidth() / WatermarkOptions.DEFAULT_HORIZONTAL_SPACING);
+            int rows = (int) Math.ceil(cropBox.getHeight() / WatermarkOptions.DEFAULT_VERTICAL_SPACING);
+            assertEquals(columns * rows, countTextPlacements(outDoc.getPage(0)));
         }
     }
 
@@ -362,6 +532,21 @@ public class PdfUtilTest {
                 .toByteArray();
 
         assertTrue(result.length > 0);
+    }
+
+    private int countTextPlacements(PDPage page) throws IOException {
+        PDFStreamParser parser = new PDFStreamParser(page);
+        try {
+            int count = 0;
+            for (Object token : parser.parse()) {
+                if (token instanceof Operator && "Tm".equals(((Operator) token).getName())) {
+                    count++;
+                }
+            }
+            return count;
+        } finally {
+            parser.close();
+        }
     }
 
     private void createSimplePdf(Path output, int pages) throws IOException {

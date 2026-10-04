@@ -1,5 +1,7 @@
 package io.github.wuwx.rain.pdf.rasterize;
 
+import javax.imageio.ImageIO;
+
 public final class RasterizeOptions {
     public static final float DEFAULT_DPI = 150.0f;
     public static final String DEFAULT_IMAGE_FORMAT = "png";
@@ -51,6 +53,11 @@ public final class RasterizeOptions {
             }
             if (imageFormat == null || imageFormat.trim().isEmpty()) {
                 throw new IllegalArgumentException("imageFormat must not be blank.");
+            }
+            if (!ImageIO.getImageWritersByFormatName(imageFormat).hasNext()) {
+                throw new IllegalArgumentException(
+                        "imageFormat must be supported by ImageIO, but no image writer was found for: "
+                                + imageFormat);
             }
             return new RasterizeOptions(this);
         }
